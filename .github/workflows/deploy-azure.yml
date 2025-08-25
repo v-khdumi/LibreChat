@@ -1,0 +1,87 @@
+name: Deploy to Azure App Service
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+        - production
+        - staging
+
+env:
+  AZURE_WEBAPP_NAME: librechat-webapp
+  AZURE_WEBAPP_PACKAGE_PATH: '.'
+  NODE_VERSION: '20.x'
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: |
+        npm ci --production=false
+        
+    - name: Build data provider
+      run: npm run build:data-provider
+      
+    - name: Build data schemas
+      run: npm run build:data-schemas
+      
+    - name: Build API
+      run: npm run build:api
+
+    - name: Build client package
+      run: npm run build:client-package
+
+    - name: Build frontend
+      run: npm run frontend
+
+    - name: Prepare deployment package
+      run: |
+        # Clean up dev dependencies and unnecessary files
+        npm prune --production
+        
+        # Remove unnecessary files and directories for deployment
+        rm -rf e2e/
+        rm -rf .git/
+        rm -rf .github/
+        rm -rf client/src/
+        rm -rf packages/*/src/
+        rm -rf node_modules/.cache/
+        
+        # Keep essential files for Azure deployment
+        echo "Deployment package prepared"
+
+    - name: Login to Azure
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    - name: Deploy to Azure App Service
+      uses: azure/webapps-deploy@v2
+      with:
+        app-name: ${{ env.AZURE_WEBAPP_NAME }}
+        package: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
+        startup-command: 'bash startup.sh'
+
+    - name: Azure logout
+      run: |
+        az logout
