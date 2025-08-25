@@ -1,0 +1,27 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "siteName": {
+            "value": "librechat-webapp"
+        },
+        "hostingPlanName": {
+            "value": "librechat-app-service-plan"
+        },
+        "sku": {
+            "value": "B2"
+        },
+        "cosmosDBAccountName": {
+            "value": "librechat-mongodb"
+        },
+        "cosmosDBDatabaseName": {
+            "value": "LibreChat"
+        },
+        "repoUrl": {
+            "value": "https://github.com/v-khdumi/LibreChat.git"
+        },
+        "branch": {
+            "value": "main"
+        }
+    }
+}

@@ -1,0 +1,160 @@
+{
+  "name": "LibreChat Azure Configuration",
+  "description": "Configuration file for LibreChat deployment on Azure App Service",
+  "version": "1.0.0",
+  "deployment": {
+    "platform": "azure-app-service",
+    "runtime": "node",
+    "nodeVersion": "20.x",
+    "buildCommands": [
+      "npm install",
+      "npm run build:data-provider",
+      "npm run build:data-schemas", 
+      "npm run build:api",
+      "npm run build:client-package",
+      "npm run frontend"
+    ],
+    "startCommand": "bash startup.sh"
+  },
+  "azure": {
+    "appService": {
+      "os": "linux",
+      "runtime": "NODE|20-lts",
+      "alwaysOn": true,
+      "ftpsState": "Disabled",
+      "minTlsVersion": "1.2",
+      "http20Enabled": true,
+      "clientAffinityEnabled": false,
+      "webSocketsEnabled": true
+    },
+    "scaling": {
+      "minInstances": 1,
+      "maxInstances": 10,
+      "scaleOutCooldown": "PT10M",
+      "scaleInCooldown": "PT5M",
+      "rules": [
+        {
+          "metricName": "CpuPercentage",
+          "operator": "GreaterThan", 
+          "threshold": 70,
+          "changeCount": 1,
+          "timeGrain": "PT1M",
+          "timeWindow": "PT10M"
+        },
+        {
+          "metricName": "MemoryPercentage",
+          "operator": "GreaterThan",
+          "threshold": 80,
+          "changeCount": 1,
+          "timeGrain": "PT1M", 
+          "timeWindow": "PT10M"
+        }
+      ]
+    }
+  },
+  "monitoring": {
+    "applicationInsights": {
+      "enabled": true,
+      "samplingPercentage": 100,
+      "enableLiveMetrics": true
+    },
+    "logging": {
+      "level": "info",
+      "format": "json",
+      "destinations": ["console", "applicationInsights"]
+    }
+  },
+  "security": {
+    "httpsOnly": true,
+    "clientCertEnabled": false,
+    "identityProviders": {
+      "azureActiveDirectory": {
+        "enabled": false
+      },
+      "google": {
+        "enabled": false
+      },
+      "microsoft": {
+        "enabled": false
+      }
+    }
+  },
+  "networking": {
+    "vnetIntegration": {
+      "enabled": false
+    },
+    "privateEndpoint": {
+      "enabled": false  
+    }
+  },
+  "storage": {
+    "strategy": "azure-blob",
+    "containers": {
+      "uploads": {
+        "publicAccess": "none",
+        "corsRules": [
+          {
+            "allowedOrigins": ["*"],
+            "allowedMethods": ["GET", "POST", "PUT", "DELETE"],
+            "allowedHeaders": ["*"],
+            "exposedHeaders": ["*"],
+            "maxAgeInSeconds": 3600
+          }
+        ]
+      }
+    }
+  },
+  "database": {
+    "type": "cosmosdb-mongodb",
+    "settings": {
+      "consistency": "Session",
+      "throughput": 400,
+      "serverVersion": "4.2",
+      "backup": {
+        "type": "Continuous",
+        "retentionInHours": 720
+      }
+    }
+  },
+  "healthCheck": {
+    "path": "/api/health",
+    "intervalInSeconds": 30,
+    "timeoutInSeconds": 10,
+    "unhealthyThreshold": 3,
+    "healthyThreshold": 2
+  },
+  "environment": {
+    "production": {
+      "NODE_ENV": "production",
+      "CONSOLE_JSON": "true",
+      "TRUST_PROXY": "1",
+      "DEBUG_LOGGING": "false"
+    },
+    "staging": {
+      "NODE_ENV": "staging", 
+      "CONSOLE_JSON": "true",
+      "TRUST_PROXY": "1",
+      "DEBUG_LOGGING": "true"
+    }
+  },
+  "features": {
+    "fileUploads": {
+      "enabled": true,
+      "maxFileSize": "10MB",
+      "allowedTypes": ["image/*", "text/*", "application/pdf"]
+    },
+    "rateLimiting": {
+      "enabled": true,
+      "rules": {
+        "general": {
+          "windowMs": 900000,
+          "max": 100
+        },
+        "login": {
+          "windowMs": 900000,
+          "max": 5
+        }
+      }
+    }
+  }
+}
